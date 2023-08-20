@@ -1,0 +1,118 @@
+import pandas as pd
+import matplotlib.pyplot as plt 
+import seaborn as sns
+data = pd.read_csv("wasteprojectionmodel_actuals_20230721.csv", sep=",")
+data 
+
+# diverted_material =
+years = data["financial_year"].unique()
+# data["recycled"]/
+
+diversion_rates = []
+for year in years:    
+    year_data = data[data["financial_year"] == year]
+    diverted_amount = year_data["recycled"].sum()
+    disposal_amount = year_data["disposal"].sum()
+    year_waste = diverted_amount + disposal_amount
+    diversion_rate = diverted_amount / year_waste
+    
+    fogo = year_data[year_data["wpm_material_name"].isin(['Food organics','Garden organics'])]
+    fogo_disposed = fogo["disposal"].sum()
+    fogo_diverted = fogo["recycled"].sum()
+    fogo_waste = fogo_diverted + fogo_disposed
+    fogo_diversion_rate = fogo_diverted / fogo_waste
+    
+    year_data_tmp = [year, disposal_amount, diverted_amount, diversion_rate, fogo_waste]
+    materials = data["wpm_material_name"].unique()
+    for material in materials:
+        material_data = year_data[year_data["wpm_material_name"] == material]
+        material_disposed = material_data["disposal"].sum()
+        material_diverted = material_data["recycled"].sum()
+        material_waste = material_diverted + material_disposed
+        material_diversion_rate = material_diverted / material_waste
+        year_data_tmp.append(material_waste)
+    
+    
+        
+    diversion_rates.append(year_data_tmp)
+#     commercial_waste = year_data[year_data["waste_stream"] == "Commercial and Industrial"]
+year_data = pd.DataFrame(diversion_rates,columns=["year", "disposal_amount", "diverted_amount", "diversion_rate", "fogo_waste"] + [material + "_waste" for material in materials])
+year_data
+                                                                                                                                   
+disposed_material_by_sectors = []
+sectors = data["waste_stream"].unique()
+
+for year in years:    
+    year_data = data[data["financial_year"] == year]
+
+    
+    fogo = year_data[year_data["wpm_material_name"].isin(['Food organics','Garden organics'])]
+    soil_and_natural_mat = year_data[year_data["wpm_material_name"] == "Soil and natural materials"] 
+    wood_timber = year_data[year_data["wpm_material_name"] == "Wood /timber"] 
+    
+    year_sector_data = [year]
+    for sector in sectors:
+        fogo_sector = fogo[fogo["waste_stream"] == sector]
+        sector_fogo_disposed = fogo_sector["disposal"].sum()
+        sector_soil_and_natural_disposed = soil_and_natural_mat[soil_and_natural_mat["waste_stream"] == sector]["disposal"].sum()
+        sector_wood_timber_disposed = wood_timber[wood_timber["waste_stream"] == sector]["disposal"].sum()
+        year_sector_data += [sector_fogo_disposed, sector_soil_and_natural_disposed, sector_wood_timber_disposed]
+        
+    disposed_material_by_sectors.append(year_sector_data)
+
+disposed_material_by_sectors = pd.DataFrame(disposed_material_by_sectors,columns=["year"] + [sector + type  for sector in sectors for type in [": fogo disposed", ": soil and natural disposed", ": wood timber disposed"]])
+disposed_material_by_sectors
+
+disposed_material_by_sectors = disposed_material_by_sectors.iloc[-3:]
+disposed_material_by_sectors_sum = disposed_material_by_sectors.sum().iloc[1:]
+plt.bar(disposed_material_by_sectors_sum.index, disposed_material_by_sectors_sum)
+plt.xticks(rotation=90);
+
+disposed_material_by_sectors_sum
+
+disposed_fogo_origins = disposed_material_by_sectors_sum[["Commercial and Industrial: fogo disposed", "Construction and Demolition: fogo disposed", "Municipal Solid Waste: fogo disposed"]]
+plt.bar(disposed_fogo_origins.index, disposed_fogo_origins)
+plt.title("Origins of disposed fogo from 2018 to 2021")
+plt.xticks(rotation=90);
+
+disposed_fogo_origins = disposed_material_by_sectors_sum[["Commercial and Industrial: soil and natural disposed", "Construction and Demolition: soil and natural disposed", "Municipal Solid Waste: soil and natural disposed"]]
+plt.bar(disposed_fogo_origins.index, disposed_fogo_origins)
+plt.title("Origins of soil and natural waste disposed from 2018 to 2021")
+plt.xticks(rotation=90);
+
+disposed_fogo_origins = disposed_material_by_sectors_sum[["Commercial and Industrial: wood timber disposed", "Construction and Demolition: wood timber disposed", "Municipal Solid Waste: wood timber disposed"]]
+plt.bar(disposed_fogo_origins.index, disposed_fogo_origins)
+plt.title("Origins of wood timber disposed waste from 2018 to 2021 ")
+plt.xticks(rotation=90);
+
+disposed_material_by_sectors_sum
+# disposed_material_by_sectors_sum["Commercial and Industrial: wood timber disposed", "Construction and Demolition: wood timber disposed", "Municipal Solid Waste: wood timber disposed"]
+
+import numpy as np
+import seaborn as sns
+
+correlation_mat = year_data.iloc[:, 1:].corr()
+
+plt.figure(figsize=(10,10))
+plt.title("Material waste correlations with diversion rate")
+# ax = sns.heatmap(correlation_mat["diversion_rate"], linewidth=0.5, vmin=-1, vmax=1)
+
+diversion_rates = correlation_mat["diversion_rate"].sort_values()
+plt.bar(diversion_rates.index, diversion_rates)
+plt.xlabel("Materials")
+plt.xticks(rotation=90);
+
+plt.figure(figsize=(10,10))
+plt.title("Material waste correlations with disposal amount")
+# ax = sns.heatmap(correlation_mat["diversion_rate"], linewidth=0.5, vmin=-1, vmax=1)
+
+disposal_amounts = correlation_mat["disposal_amount"].sort_values()
+plt.bar(disposal_amounts.index, disposal_amounts)
+plt.xlabel("Materials")
+plt.xticks(rotation=90);
+
+correlation_mat[["disposal_amount"]]
+
+                                                                                             
+                                                                                                                                   
+                                                                                                                                   
